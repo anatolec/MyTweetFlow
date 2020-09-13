@@ -24,7 +24,7 @@ def run():
             c.execute("UPDATE LATEST_TWEET SET TWEET_ID = ?", (tweet_id,))
             c.execute("INSERT INTO USER_RESULTS VALUES (?, ?, ?, ?)", (username, 0, tph, datetime.now()))
             db_conn.commit()
-        time.sleep(10)
+        time.sleep(60)
 
 
 def produce_text(username, tph, contributors, max=3):
