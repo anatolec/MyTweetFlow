@@ -14,7 +14,8 @@ def get_following_list(username):
     return [str(i) for i in requests.get(url=endpoint_following.format(username), headers=headers).json()['ids']]
 
 
-def get_user_metrics(user_id, conn, depth=200):
+def get_user_metrics(user_id, depth=200):
+    conn = get_db_connection()
     c = conn.cursor()
     c.execute("SELECT screen_name, tweets_per_hour, rt_ratio, latest_update FROM user_metrics WHERE user_id=?", (user_id,))
     results = c.fetchmany()
@@ -91,11 +92,10 @@ def get_total_tweet_flow(username):
 
 def get_tweet_flow_contributors(username, with_percentages=True, max_results=100):
     following_list = get_following_list(username)
-    db_con = get_db_connection()
     contributors = []
     total_tph = 0
     for user_id in following_list:
-        screen_name, tph, rt_ratio = get_user_metrics(user_id, db_con)
+        screen_name, tph, rt_ratio = get_user_metrics(user_id)
         contributors.append((user_id, screen_name, tph, rt_ratio))
         total_tph += tph
     contributors.sort(key=lambda tup: -tup[2])

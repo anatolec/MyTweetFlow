@@ -15,20 +15,32 @@ def run():
 
         print(f"Found {len(mentions)} mentions")
         for tweet_id, username in mentions:
-            contributors = my_tweet_flow.get_tweet_flow_contributors(username, max_results=3)
+            contributors = my_tweet_flow.get_tweet_flow_contributors(username, max_results=3, with_percentages=False)
             tph = my_tweet_flow.get_total_tweet_flow(username)
 
-            text = f"""Hi @{username} !
-    
-    You should get on average {round(tph)} tweets per hour and here are your first three contributors :
-    @{contributors[0][1]} ({round(contributors[0][2])} tweets per hour)
-    @{contributors[1][1]} ({round(contributors[1][2])} tweets per hour)
-    @{contributors[2][1]} ({round(contributors[2][2])} tweets per hour)
-    
-    Get more insights at mytweetflow.com !
-    """
+            text = produce_text(username, tph, contributors)
+
             my_tweet_flow.send_answer(text, tweet_id)
             c.execute("UPDATE LATEST_TWEET SET TWEET_ID = ?", (tweet_id,))
             c.execute("INSERT INTO USER_RESULTS VALUES (?, ?, ?, ?)", (username, 0, tph, datetime.now()))
             db_conn.commit()
         time.sleep(10)
+
+
+def produce_text(username, tph, contributors, max=3):
+    text = \
+        f"""Hi @{username} !
+
+You should get on average {round(tph)} tweets per hour and here are your first {max} contributors :
+"""
+    for i in range(max):
+        text += \
+            f"""
+@{contributors[i][1]} ({round(contributors[i][2])} tweets per hour)        
+"""
+    text += \
+        """
+Get more insights at mytweetflow.com !
+"""
+
+    return text
