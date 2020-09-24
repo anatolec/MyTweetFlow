@@ -1,3 +1,3 @@
-import my_tweet_flow
+import my_tweet_flow as mtf
 
-my_tweet_flow.account_monitoring.run()
+print(mtf.get_tweet_flow_contributors('pierretermier2'))

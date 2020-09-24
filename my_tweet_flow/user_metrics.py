@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 from my_tweet_flow.params import *
 from my_tweet_flow import get_db_connection
 
+import pandas as pd
+
 
 endpoint_following = 'https://api.twitter.com/1.1/friends/ids.json?screen_name={}'
 endpoint_tweets = 'https://api.twitter.com/1.1/statuses/user_timeline.json?user_id={}&count={}&exclude_replies=true'
@@ -11,7 +13,12 @@ headers = {'authorization': 'Bearer {}'.format(token)}
 
 
 def get_following_list(username):
-    return [str(i) for i in requests.get(url=endpoint_following.format(username), headers=headers).json()['ids']]
+    req = requests.get(url=endpoint_following.format(username), headers=headers).json()
+    if 'ids' in req:
+        return [str(i) for i in req['ids']]
+    else:
+        print(req)
+        raise Exception
 
 
 def get_user_metrics(user_id, depth=200):
@@ -21,6 +28,7 @@ def get_user_metrics(user_id, depth=200):
     results = c.fetchmany()
     now = datetime.now()
     if len(results) == 1:
+        print(f"User {user_id} found in database !")
         latest_update = datetime.fromisoformat(results[0][3])
         if (now - latest_update).days < refresh_days:
             screen_name, tph, rt_ratio, latest_update = results[0]
@@ -41,6 +49,7 @@ def get_user_metrics(user_id, depth=200):
             conn.commit()
             return screen_name, tph, rt_ratio
     if len(results) == 0:
+        print(f"User {user_id} not found in database, querying from twitter")
         screen_name, tph, rt_ratio = query_user_metrics(user_id, depth=depth)
         c.execute("""
         INSERT INTO user_metrics 
@@ -90,21 +99,30 @@ def get_total_tweet_flow(username):
     return total
 
 
-def get_tweet_flow_contributors(username, with_percentages=True, max_results=100):
+def get_tweet_flow_contributors(username, with_percentages=True, max_results=100, as_pandas=True):
     following_list = get_following_list(username)
     contributors = []
     total_tph = 0
     for user_id in following_list:
         screen_name, tph, rt_ratio = get_user_metrics(user_id)
-        contributors.append((user_id, screen_name, tph, rt_ratio))
+        contributors.append((user_id, screen_name, round(tph, 2), round(100*rt_ratio, 2)))
         total_tph += tph
     contributors.sort(key=lambda tup: -tup[2])
 
     if with_percentages:
         result = []
         for user_id, screen_name, tph, rt_ratio in contributors:
-            result.append((user_id, screen_name, tph, tph/total_tph, rt_ratio))
+            result.append((user_id, screen_name, tph, round(100 * tph/total_tph,2), rt_ratio))
+    else:
+        result = contributors
 
-        return result[:max_results]
+    if as_pandas:
+        import pandas as pd
+        df = pd.DataFrame(result[:max_results])
+        if with_percentages:
+            df.columns = ['User Id', 'Username', 'Tweet per hours', 'Contribution (%)', 'Retweet Rate (%)']
+        else:
+            df.columns = ['User Id', 'Username', 'Tweet per hours', 'Retweet Rate (%)']
+        return df
 
-    return contributors[:max_results]
+    return result[:max_results]
