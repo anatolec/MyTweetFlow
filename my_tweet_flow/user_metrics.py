@@ -3,9 +3,7 @@ import requests
 from datetime import datetime, timezone
 from my_tweet_flow.params import *
 from my_tweet_flow import get_db_connection
-
 import pandas as pd
-
 
 endpoint_following = 'https://api.twitter.com/1.1/friends/ids.json?screen_name={}'
 endpoint_tweets = 'https://api.twitter.com/1.1/statuses/user_timeline.json?user_id={}&count={}&exclude_replies=true'
@@ -17,8 +15,7 @@ def get_following_list(username):
     if 'ids' in req:
         return [str(i) for i in req['ids']]
     else:
-        print(req)
-        raise Exception
+        raise Exception(req['errors'][0]['message'])
 
 
 def get_user_metrics(user_id, depth=200):
@@ -92,37 +89,34 @@ def query_user_metrics(user_id, depth=200):
     return screen_name, tph, rt_ratio
 
 
-def get_total_tweet_flow(username):
-    total = 0
-    for user_id, screen_name, tph, rt_ratio in get_tweet_flow_contributors(username, with_percentages=False):
-        total += tph
-    return total
-
-
-def get_tweet_flow_contributors(username, with_percentages=True, max_results=100, as_pandas=True):
+def get_tweet_flow_contributors(username, with_percentages=True, max_results=100):
     following_list = get_following_list(username)
     contributors = []
     total_tph = 0
     for user_id in following_list:
         screen_name, tph, rt_ratio = get_user_metrics(user_id)
-        contributors.append((user_id, screen_name, round(tph, 2), round(100*rt_ratio, 2)))
+        contributors.append((user_id, screen_name, round(tph, 4), round(100*rt_ratio, 4)))
         total_tph += tph
     contributors.sort(key=lambda tup: -tup[2])
 
     if with_percentages:
         result = []
         for user_id, screen_name, tph, rt_ratio in contributors:
-            result.append((user_id, screen_name, tph, round(100 * tph/total_tph,2), rt_ratio))
+            result.append((user_id, screen_name, tph, round(100 * tph/total_tph, 4), rt_ratio))
     else:
         result = contributors
 
-    if as_pandas:
-        import pandas as pd
-        df = pd.DataFrame(result[:max_results])
-        if with_percentages:
-            df.columns = ['User Id', 'Username', 'Tweet per hours', 'Contribution (%)', 'Retweet Rate (%)']
-        else:
-            df.columns = ['User Id', 'Username', 'Tweet per hours', 'Retweet Rate (%)']
-        return df
+    df = pd.DataFrame(result)
+    if with_percentages:
+        df.columns = ['User Id', 'Username', 'Tweets per hour', '% of total', 'Retweet ratio (%)']
+    else:
+        df.columns = ['User Id', 'Username', 'Tweets per hour', 'Retweet ratio (%)']
 
-    return result[:max_results]
+    df.set_index('Username', inplace=True)
+
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("INSERT OR REPLACE INTO USER_RESULTS VALUES (?, ?)", (username, df['Tweets per hour'].sum()))
+    conn.commit()
+
+    return df.iloc[:max_results]

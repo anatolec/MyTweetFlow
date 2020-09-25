@@ -9,8 +9,6 @@ try:
 except:
     pass
 
-c.execute('''CREATE TABLE user_metrics
-             (user_id text, screen_name text, tweets_per_hour real, rt_ratio real, latest_access date, latest_update date)''')
 
 c.execute('''
 CREATE TABLE "latest_tweet" (
@@ -30,9 +28,9 @@ CREATE TABLE "user_metrics" (
 
 c.execute('''
 CREATE TABLE "user_results" (
-	"username"	TEXT,
-	"user_id"	TEXT,
-	"tph"	REAL
+	"username"	TEXT NOT NULL,
+	"tph"	REAL,
+	PRIMARY KEY("username"))
 )''')
 conn.commit()
 conn.close()
