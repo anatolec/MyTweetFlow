@@ -97,7 +97,7 @@ def get_tweet_flow_contributors(username, with_percentages=True, max_results=100
     total_tph = 0
     for user_id in following_list:
         screen_name, tph, rt_ratio = get_user_metrics(user_id)
-        contributors.append((user_id, screen_name, round(tph, 4), round(100*rt_ratio, 4)))
+        contributors.append((user_id, screen_name, round(tph, 4), int(100*rt_ratio)))
         total_tph += tph
     contributors.sort(key=lambda tup: -tup[2])
 

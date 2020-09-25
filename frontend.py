@@ -20,9 +20,10 @@ if username != '':
             hit = mtf.get_db_hit_ratio(following_list)
             total = len(following_list)
             time = round((hit * known_time + (total - hit) * unknown_time) // 60) + 1
-            with st.spinner(f'From the {total} accounts you follow, we already know {hit} of them. It should take us less than {time} minute'+'s, have a :cocktail:'*(time>1)):
+            with st.spinner(f'From the {total} accounts {username} follows, we already know {hit} of them. It should take us around {time} minute'+'s, have a :cocktail:'*(time>1)):
                 contributors = mtf.get_tweet_flow_contributors(username).iloc[:, 1:]
             st.balloons()
+
         st.success('Success !')
         tph = contributors['Tweets per hour'].sum()
         spt = int(3600 / tph)
