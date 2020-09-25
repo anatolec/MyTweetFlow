@@ -53,6 +53,7 @@ def get_user_metrics(user_id, depth=200):
         VALUES (?, ?, ?, ?, ?, ?)
         """, (user_id, screen_name, tph, rt_ratio, now, now))
         conn.commit()
+        conn.close()
         return screen_name, tph, rt_ratio
 
 
@@ -89,8 +90,9 @@ def query_user_metrics(user_id, depth=200):
     return screen_name, tph, rt_ratio
 
 
-def get_tweet_flow_contributors(username, with_percentages=True, max_results=100):
-    following_list = get_following_list(username)
+def get_tweet_flow_contributors(username, with_percentages=True, max_results=100, following_list=None):
+    if following_list is None:
+        following_list = get_following_list(username)
     contributors = []
     total_tph = 0
     for user_id in following_list:
@@ -118,5 +120,14 @@ def get_tweet_flow_contributors(username, with_percentages=True, max_results=100
     c = conn.cursor()
     c.execute("INSERT OR REPLACE INTO USER_RESULTS VALUES (?, ?)", (username, df['Tweets per hour'].sum()))
     conn.commit()
+    conn.close()
 
     return df.iloc[:max_results]
+
+
+def get_db_hit_ratio(following_list):
+    conn = get_db_connection()
+    c = conn.cursor()
+    query = "SELECT COUNT(*) FROM USER_METRICS WHERE USER_ID IN ({})".format(', '.join('?'*len(following_list)))
+    hit = c.execute(query, (*following_list,)).fetchone()
+    return hit[0]
