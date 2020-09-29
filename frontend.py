@@ -13,13 +13,22 @@ username = st.text_input('Enter your Twitter username and press enter :')
 known_time = 0.0077
 unknown_time = 0.4355
 
+hide_streamlit_style = """
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+</style>
+
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 if username != '':
     try:
         following_list = mtf.get_following_list(username)
         hit = mtf.get_db_hit_ratio(following_list)
         total = len(following_list)
         time = round((hit * known_time + (total - hit) * unknown_time) // 60) + 1
-        with st.spinner(f'It should take us around {time} minutes to retrieve the {total} accounts followed by {username}'+', have a :cocktail: and relax...'):
+        with st.spinner(f'It should take us around {time} minute'+'s'*(time > 1)+f' to retrieve the {total} accounts followed by {username}'+', have a :cocktail: and relax...'):
             contributors = mtf.get_tweet_flow_contributors(username, depth=50).iloc[:, 1:]
         st.balloons()
 
