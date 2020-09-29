@@ -15,7 +15,12 @@ def get_following_list(username):
     if 'ids' in req:
         return [str(i) for i in req['ids']]
     else:
-        raise Exception(req['errors'][0]['message'])
+        if 'error' in req:
+            raise Exception(req['error'])
+        elif 'errors' in req:
+            raise Exception(req['errors'][0]['message'])
+        else:
+            raise Exception('Unknown error')
 
 
 def get_user_metrics(user_id, depth=200):
@@ -90,13 +95,13 @@ def query_user_metrics(user_id, depth=200):
     return screen_name, tph, rt_ratio
 
 
-def get_tweet_flow_contributors(username, with_percentages=True, max_results=100, following_list=None):
+def get_tweet_flow_contributors(username, with_percentages=True, max_results=100, following_list=None, depth=200):
     if following_list is None:
         following_list = get_following_list(username)
     contributors = []
     total_tph = 0
     for user_id in following_list:
-        screen_name, tph, rt_ratio = get_user_metrics(user_id)
+        screen_name, tph, rt_ratio = get_user_metrics(user_id, depth=depth)
         contributors.append((user_id, screen_name, round(tph, 4), int(100*rt_ratio)))
         total_tph += tph
     contributors.sort(key=lambda tup: -tup[2])
@@ -118,7 +123,7 @@ def get_tweet_flow_contributors(username, with_percentages=True, max_results=100
 
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute("INSERT OR REPLACE INTO USER_RESULTS VALUES (?, ?)", (username, df['Tweets per hour'].sum()))
+    c.execute("INSERT OR REPLACE INTO USER_RESULTS VALUES (?, ?)", (username.lower(), df['Tweets per hour'].sum()))
     conn.commit()
     conn.close()
 
