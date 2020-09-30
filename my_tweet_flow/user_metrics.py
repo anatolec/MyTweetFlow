@@ -23,13 +23,13 @@ def get_following_list(username):
             raise Exception('Unknown error')
 
 
-def get_user_metrics(user_id, depth=200):
+def get_user_metrics(user_id, depth=200, force_update=False):
     conn = get_db_connection()
     c = conn.cursor()
     c.execute("SELECT screen_name, tweets_per_hour, rt_ratio, latest_update FROM user_metrics WHERE user_id=?", (user_id,))
     results = c.fetchmany()
     now = datetime.now()
-    if len(results) == 1:
+    if len(results) == 1 and not force_update:
         print(f"User {user_id} found in database !")
         latest_update = datetime.fromisoformat(results[0][3])
         if (now - latest_update).days < refresh_days:
@@ -50,11 +50,11 @@ def get_user_metrics(user_id, depth=200):
             """, (now, now, tph, screen_name, rt_ratio, user_id))
             conn.commit()
             return screen_name, tph, rt_ratio
-    if len(results) == 0:
+    if len(results) == 0 or force_update:
         print(f"User {user_id} not found in database, querying from twitter")
         screen_name, tph, rt_ratio = query_user_metrics(user_id, depth=depth)
         c.execute("""
-        INSERT INTO user_metrics 
+        INSERT OR REPLACE INTO user_metrics 
         VALUES (?, ?, ?, ?, ?, ?)
         """, (user_id, screen_name, tph, rt_ratio, now, now))
         conn.commit()
@@ -95,13 +95,13 @@ def query_user_metrics(user_id, depth=200):
     return screen_name, tph, rt_ratio
 
 
-def get_tweet_flow_contributors(username, with_percentages=True, max_results=100, following_list=None, depth=200):
+def get_tweet_flow_contributors(username, with_percentages=True, max_results=100, following_list=None, depth=200, force_update=False):
     if following_list is None:
         following_list = get_following_list(username)
     contributors = []
     total_tph = 0
     for user_id in following_list:
-        screen_name, tph, rt_ratio = get_user_metrics(user_id, depth=depth)
+        screen_name, tph, rt_ratio = get_user_metrics(user_id, depth=depth, force_update=force_update)
         contributors.append((user_id, screen_name, round(tph, 4), int(100*rt_ratio)))
         total_tph += tph
     contributors.sort(key=lambda tup: -tup[2])

@@ -22,14 +22,28 @@ footer {visibility: hidden;}
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
+force_suffix = "--force"
+verbose_suffix = "--verbose"
+
 if username != '':
+
+    force_update = False
+    verbose = False
+
+    if force_suffix in username:
+        username = username.replace(force_suffix, '')
+        force_update = True
+
+    if verbose_suffix in username:
+        username = username.replace(verbose_suffix, '')
+        verbose = True
     try:
         following_list = mtf.get_following_list(username)
         hit = mtf.get_db_hit_ratio(following_list)
         total = len(following_list)
         time = round((hit * known_time + (total - hit) * unknown_time) // 60) + 1
         with st.spinner(f'It should take us around {time} minute'+'s'*(time > 1)+f' to retrieve the {total} accounts followed by {username}'+', have a :cocktail: and relax...'):
-            contributors = mtf.get_tweet_flow_contributors(username, depth=50).iloc[:, 1:]
+            contributors = mtf.get_tweet_flow_contributors(username, depth=50, force_update=force_update).iloc[:, 1:]
         st.balloons()
 
         st.success('Success !')
@@ -48,3 +62,5 @@ if username != '':
         st.write("These metrics are based on the 50 last tweets of each account. We don't include data from protected account.")
     except Exception as e:
         st.error(e)
+        if verbose:
+            raise e
