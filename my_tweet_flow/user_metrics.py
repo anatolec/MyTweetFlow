@@ -1,13 +1,13 @@
 import requests
 
 from datetime import datetime, timezone
-from my_tweet_flow.params import *
+from streamlit import secrets
 from my_tweet_flow import get_db_connection
 import pandas as pd
 
 endpoint_following = 'https://api.twitter.com/1.1/friends/ids.json?screen_name={}'
 endpoint_tweets = 'https://api.twitter.com/1.1/statuses/user_timeline.json?user_id={}&count={}&exclude_replies=true'
-headers = {'authorization': 'Bearer {}'.format(token)}
+headers = {'authorization': 'Bearer {}'.format(secrets['token'])}
 
 
 def get_following_list(username):
@@ -32,7 +32,7 @@ def get_user_metrics(user_id, depth=200, force_update=False):
     if len(results) == 1 and not force_update:
         print(f"User {user_id} found in database !")
         latest_update = datetime.fromisoformat(results[0][3])
-        if (now - latest_update).days < refresh_days:
+        if (now - latest_update).days < secrets['refresh_days']:
             screen_name, tph, rt_ratio, latest_update = results[0]
             c.execute("UPDATE user_metrics SET latest_access = ? WHERE user_id=?", (now, user_id))
             conn.commit()

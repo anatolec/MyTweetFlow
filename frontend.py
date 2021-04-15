@@ -2,8 +2,6 @@ import streamlit as st
 import my_tweet_flow as mtf
 from PIL import Image
 
-st.beta_set_page_config(page_title="Tweet Flow", layout='centered', page_icon=":shark:")
-
 st.image(Image.open('twitter.png'), output_format='PNG', width=100)
 st.title('Time to clean your timeline :smirk:')
 st.title('Get your insights now !')

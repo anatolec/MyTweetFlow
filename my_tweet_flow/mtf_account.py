@@ -1,12 +1,12 @@
 import requests
 
-from my_tweet_flow.params import *
+from streamlit import secrets
 from requests_oauthlib import OAuth1
 
 
 endpoint_mentions = 'https://api.twitter.com/2/tweets/search/recent?query=to:MyTweetFlow&expansions=author_id&since_id={}'
 endpoint_answer = 'https://api.twitter.com/1.1/statuses/update.json'
-headers = {'authorization': 'Bearer {}'.format(token)}
+headers = {'authorization': 'Bearer {}'.format(secrets['token'])}
 
 
 def get_mentions(since_id):
@@ -29,4 +29,7 @@ def send_answer(text, tweet_id):
         'status': f'{text}',
         'in_reply_to_status_id': f'{tweet_id}'
     }
-    requests.post(endpoint_answer, data=data, auth=OAuth1(key, secret_key, access, secret_access))
+    requests.post(endpoint_answer, data=data, auth=OAuth1(secrets['key'],
+                                                          secrets['secret_key'],
+                                                          secrets['access'],
+                                                          secrets['secret_access']))

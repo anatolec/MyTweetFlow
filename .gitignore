@@ -1,1 +1,3 @@
-/my_tweet_flow/params.py
+/my_tweet_flow/secrets.toml
+.streamlit
+/.streamlit/
