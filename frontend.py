@@ -3,8 +3,7 @@ import my_tweet_flow as mtf
 from PIL import Image
 
 st.image(Image.open('twitter.png'), output_format='PNG', width=100)
-st.title('Time to clean your timeline :smirk:')
-st.title('Get your insights now !')
+st.title('Time to clean your Twitter timeline :smirk:')
 
 username = st.text_input('Enter your Twitter username and press enter :')
 
@@ -42,7 +41,6 @@ if username != '':
         time = round((hit * known_time + (total - hit) * unknown_time) // 60) + 1
         with st.spinner(f'It should take us around {time} minute'+'s'*(time > 1)+f' to retrieve the {total} accounts followed by {username}'+', have a :cocktail: and relax...'):
             contributors = mtf.get_tweet_flow_contributors(username, depth=50, force_update=force_update).iloc[:, 1:]
-        st.balloons()
 
         st.success('Success !')
         tph = contributors['Tweets per hour'].sum()
